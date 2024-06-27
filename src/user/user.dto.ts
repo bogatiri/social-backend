@@ -1,43 +1,15 @@
+import { FamilyStatus } from '@prisma/client'
+import { Transform } from 'class-transformer'
 import {
-	IsDate,
 	IsEmail,
-	IsNumber,
+	IsEnum,
 	IsOptional,
 	IsString,
-	Max,
-	Min,
 	MinLength
 } from 'class-validator'
 
 
-
-export class PomodoroSettingsDto {
-	@IsOptional()
-	@IsNumber()
-	@Min(1)
-	workInterval?: number
-
-	@IsOptional()
-	@IsNumber()
-	@Min(1)
-	breakInterval?: number
-
-	@IsOptional()
-	@IsNumber()
-	@Min(1)
-	@Max(10)
-	intervalsCount?: number
-	
-	@IsOptional()
-	@IsString()
-	avatar?: string
-
-	@IsOptional()
-	@IsString()
-	sidebarWidth?: string
-}
-
-export class UserDto extends PomodoroSettingsDto {
+export class UserDto  {
 	@IsEmail()
 	@IsOptional()
 	email?: string
@@ -48,19 +20,21 @@ export class UserDto extends PomodoroSettingsDto {
 
 	@IsString()
 	@IsOptional()
-	phone?: string
+	about?: string
 
 	@IsString()
 	@IsOptional()
 	lastName?: string
 
-	@IsString()
+	@IsEnum(FamilyStatus)
 	@IsOptional()
-	post?: string
+	@Transform(({ value }) => typeof value === 'string' ? value.toLowerCase() : value
+)
+	familyStatus?: FamilyStatus
 
-	@IsString()
 	@IsOptional()
-	organization?: string
+	@IsString()
+	homeTown?: string
 
 	@IsOptional()
 	@MinLength(6, {
@@ -69,11 +43,4 @@ export class UserDto extends PomodoroSettingsDto {
 	@IsString()
 	password?: string
 
-	@IsString()
-	@IsOptional()
-	confirmationCode?: string
-
-	@IsDate()
-	@IsOptional()
-	confirmationExpires?: Date
 }

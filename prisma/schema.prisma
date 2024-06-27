@@ -11,10 +11,217 @@ model User {
   id        String   @id @default(uuid())
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-  email     String   @unique
-  name      String?
-  password  String
-  avatar    String?  @default("https://images.unsplash.com/photo-1477093782505-e10aaeb27c6d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w1ODAyNjN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3MTc5NDY1NDV8&ixlib=rb-4.0.3&q=80&w=1080")
+
+  email    String    @unique
+  name     String?
+  lastName  String?
+  password String
+  avatar   String?   @default("https://avatars.mds.yandex.net/get-shedevrum/11511289/cc2855ebcbb411eea6ebbaaee90618f0/orig")
+  lastSeen DateTime? @map("last_seen")
+  familyStatus    FamilyStatus?
+  homeTown    String?
+  about     String?
+  
+
+  friendships         Friendship[]    @relation("userFriendships")
+  addedByUsers        Friendship[]    @relation("friendUser")
+  senderFriendRequest FriendRequest[] @relation("senderRequests")
+  friendRequests      FriendRequest[] @relation("recipientRequests")
+  pageOwner           Posts[] @relation("PageOwner")
+
+
+  groupsMember  Groups[]   @relation("GroupMembers")
+  groupsCreator Groups[]
+  chatCreator   Chats[]
+  chats         Chats[]    @relation("UserChats")
+  likes         Likes[]
+  photos        Photos[]
+  posts         Posts[]
+  messages      Messages[]
+  comments      Comments[]
 
   @@map("user")
+}
+
+model Posts {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  text      String
+  status    PostStatus? @default(current)
+
+  group   Groups? @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId String? @map("list_id")
+
+  creator User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId  String @map("user_id")
+
+  pageOwnerId String?    @map("page_owner_id")
+  pageOwner   User?      @relation("PageOwner", fields: [pageOwnerId], references: [id], onDelete: Cascade)
+
+  likes    Likes[]
+  comments Comments[]
+
+  @@map("posts")
+}
+
+model FriendRequest {
+  id String @id @default(uuid())
+
+  sender   User   @relation("senderRequests", fields: [senderId], references: [id])
+  senderId String @map("sender_id")
+
+  recipient   User   @relation("recipientRequests", fields: [recipientId], references: [id])
+  recipientId String @map("recipient_id")
+
+  status RequestStatus?
+}
+
+model Friendship {
+  id String @id @default(uuid())
+
+  userId String
+  user   User   @relation(name: "userFriendships", fields: [userId], references: [id])
+
+  friendId String
+  friend   User   @relation(name: "friendUser", fields: [friendId], references: [id])
+
+  @@unique([userId, friendId])
+}
+
+model Groups {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  name        String
+  description String
+  isPrivate   Boolean @default(false)
+
+  posts   Posts[]
+  members User[]  @relation("GroupMembers")
+  creator User    @relation(fields: [userId], references: [id])
+  userId  String  @map("user_id")
+
+  @@map("groups")
+}
+
+model Chats {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  backGroundImage String? @db.Text
+
+  user User[] @relation("UserChats")
+  creator User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId  String @map("user_id")
+
+  messages Messages[]
+
+  @@map("chats")
+}
+
+model Messages {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  text   String
+  isRead Boolean   @default(false)
+  readAt DateTime?
+
+  creator   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @map("user_id")
+
+  chat   Chats  @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  chatId String @map("chat_id")
+
+  @@map("messages")
+}
+
+model Comments {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  text String
+
+  post   Posts  @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId String @map("post_id")
+
+  creator User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId  String @map("user_id")
+  likes      Likes[]    
+
+  @@map("comments")
+}
+
+model Likes {
+  id            String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  post          Posts?    @relation(fields: postId, references: id, onDelete: Cascade)
+  postId        String?  @map("post_id")
+
+  comment       Comments? @relation(fields: commentId, references: id, onDelete: Cascade)
+  commentId     String?  @map("comment_id")
+
+  user          User     @relation(fields: [userId], references: [id])
+  userId        String   @map("user_id")
+
+  @@unique([postId, userId]) 
+  @@unique([commentId, userId]) 
+  @@map("likes")
+}
+model News {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  text String
+
+  @@map("news")
+}
+
+model Photos {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  url String
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @map("user_id")
+
+  @@map("photos")
+}
+
+model Markers {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("markers")
+}
+
+enum PostStatus {
+  current
+  archived
+}
+
+enum RequestStatus {
+  pending
+  accepted
+  rejected
+}
+
+enum FamilyStatus {
+  not_married
+  married
+  dating
+  in_love
+  actively_looking
 }

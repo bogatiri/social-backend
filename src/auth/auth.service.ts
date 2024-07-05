@@ -26,7 +26,6 @@ export class AuthService {
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		const { password, ...user } = await this.validateUser(dto)
 		const tokens = this.issueTokens(user.id)
-
 		return {
 			user,
 			...tokens

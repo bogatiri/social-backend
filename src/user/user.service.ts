@@ -6,6 +6,7 @@ import * as path from 'path'
 import { AuthDto } from 'src/auth/dto/auth.dto'
 import { PrismaService } from 'src/prisma.service'
 
+import { RequestStatus } from '@prisma/client'
 import { UserDto } from './user.dto'
 
 @Injectable()
@@ -31,37 +32,64 @@ export class UserService {
 	}
 
 	async findById(id: string) {
-		const user = await this.prisma.user.findUnique({
-			where: {
-				id
-			}
-		})
-
-
-		try {
-			// eslint-disable-next-line @typescript-eslint/no-unused-vars
-			const { password, avatar, ...rest } = user
-
-			return {
-				...rest,
-				avatar: avatar.includes('static/uploads') ? await this.getAvatar(user.avatar) : user.avatar
-			}
-		} catch (err) {
-			console.error('Ошибка при чтении файла аватара:', err)
-		}
-	}
-
-
-
-	getById(id: string) {
 		return this.prisma.user.findUnique({
 			where: {
 				id
 			},
+			include: {
+				friendRequests: {
+					include: {
+						sender: true
+					}
+				},
+				senderFriendRequest: {
+					include: {
+						recipient: true
+					}
+				},
+				friendships: {
+					include: {
+						friend: true
+					}
+				}
+			}
 		})
 	}
 
-	getByEmail(email: string) {
+	async findByName(name: string) {
+		return this.prisma.user.findMany({
+			where: {
+				name: name
+			}
+		})
+	}
+
+	async getById(id: string) {
+		return this.prisma.user.findUnique({
+			where: {
+				id
+			},
+			include: {
+				friendships: {
+					include: {
+						friend: true
+					}
+				},
+				friendRequests: {
+					include: {
+						sender: true
+					}
+				},
+				senderFriendRequest: {
+					include: {
+						recipient: true
+					}
+				},
+			}
+		})
+	}
+
+	async getByEmail(email: string) {
 		return this.prisma.user.findUnique({
 			where: {
 				email
@@ -72,18 +100,12 @@ export class UserService {
 	async getProfile(id: string) {
 		const profile = await this.getById(id)
 
-
 		try {
 			// eslint-disable-next-line @typescript-eslint/no-unused-vars
-			const { password, avatar, ...rest } = profile
-
-			const userAvatar = avatar.includes('static/uploads') ? await this.getAvatar(profile.avatar) : profile.avatar
+			const { password, ...rest } = profile
 
 			return {
-				user: {
-					...rest,
-					avatar: userAvatar
-				}
+				...rest
 			}
 		} catch (err) {
 			console.error('Ошибка при чтении файла аватара:', err)
@@ -116,4 +138,102 @@ export class UserService {
 			data
 		})
 	}
+
+	async sendRequestToFriends(id: string, idRecipient: string) {
+		const user = await this.prisma.user.findUnique({
+			where: {
+				id
+			},
+			include: {
+				friendRequests: true,
+				friendships: true
+			}
+		})
+
+		const friendExist = user.friendships.some(
+			friend => friend.id === idRecipient
+		)
+
+		if (friendExist) {
+			throw new Error(`User already on friends`)
+		}
+		if (!friendExist) {
+			return this.prisma.$transaction([
+				this.prisma.friendRequest.create({
+					data: {
+						recipient: {
+							connect: {
+								id: idRecipient
+							}
+						},
+						sender: {
+							connect: {
+								id
+							}
+						},
+						status: 'pending' as RequestStatus
+					}
+				})
+			])
+		}
+	}
+
+	async acceptFriendRequest(
+		id: string,
+		idSender: string,
+		requestId: string
+	) {
+		return this.prisma.$transaction([
+			this.prisma.friendRequest.update({
+				where: {
+					id: requestId
+				},
+				data: {
+					status: 'accepted' as RequestStatus
+				}
+			}),
+			this.prisma.friendship.create({
+				data: {
+					user: {
+						connect: {
+							id
+						}
+					},
+					friend: {
+						connect: {
+							id: idSender
+						}
+					}
+				}
+			}),
+			this.prisma.friendship.create({
+				data: {
+					user: {
+						connect: {
+							id: idSender
+						}
+					},
+					friend: {
+						connect: {
+							id
+						}
+					}
+				}
+			}),
+			this.prisma.friendRequest.delete({
+				where: {
+					id: requestId
+				}
+			})
+		]);
+	}
+
+	async rejectFriendRequest(id: string) {
+		return this.prisma.friendRequest.delete({
+			where: {
+				id
+			}
+		})
+	}
+
 }

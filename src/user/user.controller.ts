@@ -3,6 +3,7 @@
 import {
 	Body,
 	Controller,
+	Delete,
 	Get,
 	HttpCode,
 	Param,
@@ -32,12 +33,44 @@ export class UserController {
 		return this.userService.getProfile(id)
 	}
 
+	@Put('/name')
+	@Auth()
+	async findByName(@Body() body: any) {
+		return this.userService.findByName(body.name)
+	}
+
 	@UsePipes(new ValidationPipe())
 	@HttpCode(200)
 	@Put()
 	@Auth()
 	async updateProfile(@CurrentUser('id') id: string, @Body() dto: UserDto) {
 		return this.userService.update(id, dto)
+	}
+
+	@UsePipes(new ValidationPipe())
+	@HttpCode(200)
+	@Put('/sendRequest')
+	@Auth()
+	async sendRequestToFriends(@CurrentUser('id') id: string, @Body() body: any) {
+		const {idRecipient} = body
+		return this.userService.sendRequestToFriends(id, idRecipient)
+	}
+
+	@UsePipes(new ValidationPipe())
+	@HttpCode(200)
+	@Put('/acceptRequest')
+	@Auth()
+	async acceptFriendRequest(@CurrentUser('id') id: string, @Body() body: any) {
+		const {idSender, requestId} = body
+		return this.userService.acceptFriendRequest(id, idSender, requestId)
+	}
+
+	@UsePipes(new ValidationPipe())
+	@HttpCode(200)
+	@Delete('deleteRequest/:id')
+	@Auth()
+	async rejectFriendRequest(@Param('id') id: string) {
+		return this.userService.rejectFriendRequest(id)
 	}
 
 }

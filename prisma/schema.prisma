@@ -76,6 +76,8 @@ model FriendRequest {
   recipientId String @map("recipient_id")
 
   status RequestStatus?
+
+  @@unique([recipientId, senderId])
 }
 
 model Friendship {

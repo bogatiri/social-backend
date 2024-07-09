@@ -7,6 +7,8 @@ import { UserModule } from './user/user.module'
 import { PostModule } from './posts/post.module'
 import { LikeModule } from './likes/like.module'
 import { CommentModule } from './comments/comment.module'
+import { ChatModule } from './chats/chat.module'
+import { MessageModule } from './message/message.module'
 
 @Module({
 	imports: [
@@ -15,7 +17,9 @@ import { CommentModule } from './comments/comment.module'
 		UserModule,
 		PostModule,
 		LikeModule,
-		CommentModule
+		CommentModule,
+		ChatModule,
+		MessageModule
 	]
 })
 export class AppModule {}

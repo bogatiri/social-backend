@@ -113,10 +113,12 @@ model Chats {
   id        String   @id @default(uuid())
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
+  isGroup   Boolean   @default(false)
 
   backGroundImage String? @db.Text
 
-  user User[] @relation("UserChats")
+  users User[] @relation("UserChats")
+
   creator User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId  String @map("user_id")
 
